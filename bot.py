@@ -196,7 +196,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             
     elif text == "Режим продаж 💸":
         context.user_data['state'] = 'awaiting_number'
-        await update.message.reply_text('Успешных продаж!)', reply_markup=ReplyKeyboardMarkup([["Выйти с режима продаж ◀️"]]))
+        await update.message.reply_text('Успешных продаж! хуесос)', reply_markup=ReplyKeyboardMarkup([["Выйти с режима продаж ◀️"]]))
     elif text == "Выйти с режима продаж ◀️":
         context.user_data['state'] = 'awaiting_category'
         if update.message.from_user.id == ADMIN or ADMIN_2 or ADMIN_3:
