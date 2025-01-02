@@ -9,12 +9,9 @@ cur = con.cursor()
 
 
 
+ADMIN_ID = {1093664497, 806552022, 749427159, 1053514876}
 
-ADMIN = 1093664497   
-ADMIN_2 = 806552022
-ADMIN_3 = 749427159
-ADMIN_4 = 1053514876
-
+USER_ID = {1093664497, 749427159,  1212927001, 772425041,  806552022,  877798690,  1664532632, 5080403377, 1019777881, 5918430941, 5694532778, 1419713368, 839739793,  1053514876, 922068077, 5143322660}
 
 cur.execute('''CREATE TABLE IF NOT EXISTS baze_706 (
     id INTEGER PRIMARY KEY,
@@ -55,21 +52,12 @@ contacts = [
     (1, 'Яковлева Кристина', 0, 0, 0, 0),
     (1, 'Крюкова Кристина', 0, 0, 0, 0),
     
-    
-    
-    
-
-    
-
-
-
-    
-    
-    
-    
-
-    
 ]
+
+
+
+
+
 
 for contact in contacts:
     cur.execute('SELECT COUNT(*) FROM baze_706 WHERE id = ?', (contact[0],))
@@ -102,17 +90,30 @@ def update_database(user_id, category, value):
 
 # Начальная функция
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_id = update.message.from_user.id
-    if user_exists(user_id):
-        if int(update.message.from_user.id) != ADMIN or ADMIN_2 or ADMIN_3 or ADMIN_4:
-            await update.message.reply_text(f'Приветствую, {get_username(user_id)}!', reply_markup=ReplyKeyboardRemove())
-            await update.message.reply_text('Жду твои продажи. За правилами использования, обратись к @qumaqq\nУспехов))',reply_markup = ReplyKeyboardMarkup([['Режим продаж 💸'], ['Моя статистика 📋']])) 
-        else:
-            await update.message.reply_text(f'Приветствую, {get_username(user_id)}! Админ панель для тебя', reply_markup = ReplyKeyboardMarkup([['Режим продаж 💸'], ['Моя статистика 📋'], ['Открыть БД 📁'], ['Продажи 📊'], ['Отчет 📋'], ['❌ Отичстить продажи ❌']]))   
-            
-     
-    else:
+    user_id = update.effective_user.id
+    if user_id not in USER_ID:
         await update.message.reply_text('К сожалению, ты не добавлен в нашу базу данных. Обратись к админу @qumaqq')
+        return # Выходим из функции, чтобы не выполнялся дальнейший код
+
+    if user_id in ADMIN_ID:
+        await update.message.reply_text(f'Приветствую, {get_username(user_id)}! Админ панель для тебя',
+                                        reply_markup=ReplyKeyboardMarkup([
+                                            ['Режим продаж 💸'],
+                                            ['Моя статистика 📋'],
+                                            ['Открыть БД 📁'],
+                                            ['Продажи 📊'],
+                                            ['Отчет 📋'],
+                                            ['❌ Очистить продажи ❌']
+                                        ]))
+    else:
+        await update.message.reply_text(f'Приветствую, {get_username(user_id)}!',
+                                        reply_markup=ReplyKeyboardRemove())
+        await update.message.reply_text('Жду твои продажи. За правилами использования, '
+                                        'обратись к @qumaqq\nУспехов))',
+                                        reply_markup=ReplyKeyboardMarkup([
+                                            ['Режим продаж 💸'],
+                                            ['Моя статистика 📋']
+                                        ]))
 
 # Обработка состояния ожидания номера
 async def process_number_state(update, context, text):
@@ -128,7 +129,7 @@ async def process_number_state(update, context, text):
 # Обработка состояния ожидания категории
 async def process_category_state(update, context, text):
     if text == 'Отмена продажи':
-        if update.message.from_user.id == ADMIN or ADMIN_2 or ADMIN_3:
+        if update.message.from_user.id in ADMIN_ID:
             await update.message.reply_text("Продажа отменена.", reply_markup = ReplyKeyboardMarkup([['Режим продаж 💸'], ['Моя статистика 📋'], ['Открыть БД 📁'], ['Продажи 📊'], ['Отчет 📋'], ['❌ Отичстить продажи ❌']]))
             context.user_data.clear()  
             return 
@@ -191,7 +192,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text('Успешных продаж!)', reply_markup=ReplyKeyboardMarkup([["Выйти с режима продаж ◀️"]]))
     elif text == "Выйти с режима продаж ◀️":
         context.user_data['state'] = 'awaiting_category'
-        if update.message.from_user.id == ADMIN or ADMIN_2 or ADMIN_3:
+        if update.message.from_user.id in ADMIN_ID:
             await update.message.reply_text("Вы вышли из режима продаж.", reply_markup = ReplyKeyboardMarkup([['Режим продаж 💸'], ['Моя статистика 📋'], ['Открыть БД 📁'], ['Продажи 📊'], ['Отчет 📋'], ['❌ Отичстить продажи ❌']]))
             context.user_data['state'] = None   
         else:
@@ -206,7 +207,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     elif context.user_data.get('state') == 'awaiting_category':
         await process_category_state(update, context, text)
     elif text == "Открыть БД 📁":
-        if int(update.message.from_user.id) == ADMIN or ADMIN_2 or ADMIN_3:
+        if update.message.from_user.id in ADMIN_ID:
             cur.execute("SELECT * FROM baze_706")
             rows = cur.fetchall()
             for row in rows:
@@ -215,11 +216,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             await update.message.reply_text('Не выйдет)')
     elif text == "Продажи 📊":
         context.user_data['state'] = None
-        if int(update.message.from_user.id) == ADMIN or ADMIN_2 or ADMIN_3:
+        if update.message.from_user.id in ADMIN_ID:
             cur.execute("SELECT * FROM baze_706 WHERE ek > 0 OR ekmk > 0 OR dis > 0 OR mp > 0 ")
             rows = cur.fetchall()
             for row in rows:
-                await update.message.reply_text(f"{row[1]}: ЕК|ЕКМК|ДИС|МП: {row[2:]}")
+                await update.message.reply_text(f"{row[1]}:\nЕК|ЕКМК|ДИС|МП:\n{row[2:]}")
             
             cur.execute("SELECT SUM(ek) FROM baze_706")
             total_ek = cur.fetchone()[0]
@@ -244,11 +245,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         else:
             await update.message.reply_text('Не выйдет)')
     elif text == "❌ Отичстить продажи ❌":
-        if int(update.message.from_user.id) == ADMIN or ADMIN_2 or ADMIN_3:
+        if update.message.from_user.id in ADMIN_ID:
             cur.execute("SELECT * FROM baze_706  WHERE ek > 0 OR ekmk > 0 OR dis > 0 OR mp > 0 ")
             rows = cur.fetchall()
             for row in rows:
-                await update.message.reply_text(f"{row[1]}: ЕК|ЕКМК|ДИС|МП: {row[2:]}")
+                await update.message.reply_text(f"{row[1]}:\nК|ЕКМК|ДИС|МП:\n{row[2:]}")
             await update.message.reply_text('Удаляю)')
             cur.execute('UPDATE baze_706 SET ek = 0, ekmk = 0, dis = 0, mp = 0;')
             con.commit()
